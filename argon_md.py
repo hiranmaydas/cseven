@@ -18,7 +18,7 @@ box=(n)*((m/density)**(1/3))
 rc=box/2 #cutoff length
 sigma=3.40*((10**(-10)))
 epsilon = 997/N_A
-No_of_loops=1000
+No_of_loops=100000
 
 #-----------------------------------------------------------------------
 #declaring important function 
@@ -175,22 +175,28 @@ def integration(particles,force):
 # reflecting boundary condition 
         if particles[i][1][0]>box :                         #   Applying periodic boundary condition 
             particles[i][1][0]=2*box-particles[i][1][0]
+            particles[i][0][0]=2*box-particles[i][0][0]
+
 
         elif(particles[i][1][0]<0):
             particles[i][1][0]= -particles[i][1][0]
+            particles[i][0][0]= -particles[i][0][0]
 
         if(particles[i][1][1]>box): 
             particles[i][1][1]=2*box -particles[i][1][1] 
+            particles[i][0][1]=2*box-particles[i][0][1]
 
         elif(particles[i][1][1]<0):
             particles[i][1][1]= - particles[i][1][1]
+            particles[i][0][1]= -particles[i][0][1]
 
         if(particles[i][1][2]>box): 
             particles[i][1][2]= 2*box - particles[i][1][2]
+            particles[i][0][2]=2*box-particles[i][0][2]
 
         elif(particles[i][1][2]<0):
             particles[i][1][2]= -particles[i][1][2]
-
+            particles[i][0][2]= -particles[i][0][2]
 
 
 
@@ -260,9 +266,10 @@ def main():
 
         force=force_en[0]
         integration(particles,force)
-        #print(i,"\n")
-        #print("Velocities:",cal_vel(particles),"\n")
-        #print("Temperature: ",(cal_vel(particles)[1]**2)*(M/(3*R)),"\n")
+        if(i%1000==0):
+            print(i,"\n")
+            print("Velocities:",cal_vel(particles),"\n")
+            print("Temperature: ",(cal_vel(particles)[1]**2)*(M/(3*R)),"\n")
 
     print(cal_vel(particles)) 
         
