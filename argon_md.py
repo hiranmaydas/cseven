@@ -5,20 +5,20 @@ import random
 
 #-----------------------------------------------------------------------
 #declaring necessary constants:
-TIME_STEPS=10**(-15)
-Temperature=30 #K
+TIME_STEPS=10**(-14)
+Temperature=90 #K
 n=4
 N=n**3
 M=37.5*0.001 #Kg per mol
 N_A=6.023*(10**23) # per mol
 m = M/N_A # amu
 R=8.314 #Jule/mol.Kelvin
-density=100 #Kg/m^3
+density=1 #Kg/m^3
 box=(n)*((m/density)**(1/3))
 rc=box/2 #cutoff length
 sigma=3.40*((10**(-10)))
 epsilon = 997/N_A
-fix=1#                      fix has been used to compensate the force calculation problem, After correction please remove this.
+No_of_loops=1000
 
 #-----------------------------------------------------------------------
 #declaring important function 
@@ -207,10 +207,34 @@ def cal_vel(particles):
         v=(vx**2 +vy**2 +vz**2)**(0.5)
         avg_vel=avg_vel + v/N
         rms_vel = rms_vel+ (vx**2 +vy**2 +vz**2)/N
+        
     
     rms_vel= rms_vel**0.5
 
     return [avg_vel,rms_vel]
+
+def draw_graph(particles,limit):
+    
+    graph=[]
+    for i in range(20):
+        graph.insert(i,0)
+    
+    for j in  range(20):
+        ranges=[(limit/20)*(j-1),(limit/20)*(j+1)]
+        for i in range(N):
+            vx=(particles[i][1][0]-particles[i][0][0])/TIME_STEPS
+            vy=(particles[i][1][1]-particles[i][0][1])/TIME_STEPS
+            vz=(particles[i][1][2]-particles[i][0][2])/TIME_STEPS
+        
+            v=(vx**2 +vy**2 +vz**2)**(0.5)
+            if(v>ranges[0] and v<=ranges[1]):
+                graph[j]+=1
+    for i in range(20):
+       # for j in range(graph[i]):
+       #     print(" ")
+      #  print("[*]\n \n \n")
+        print(graph[i])
+        
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------
 #testing the initialisation 
@@ -221,28 +245,27 @@ def main():
 
     particles= initialisation(particles,Temperature,density)  #initialisation happenes here
 
-    print( cal_vel(particles)) 
+    limit= 2*cal_vel(particles)[1]
 #    for i in range(N):
 #        print(particles[i])
-
+    draw_graph(particles,limit)
     force=[] 
 
     for i in range(N):
         force.insert(i,[0,0,0])
 
-    
-
 #----------------------------------------------------------------
-    for i in range(10**3):
+    for i in range(No_of_loops):
         force_en = cal_force(particles,force)
 
         force=force_en[0]
         integration(particles,force)
-        print(i,"\n")
-        print(cal_vel(particles))
+        #print(i,"\n")
+        #print("Velocities:",cal_vel(particles),"\n")
+        #print("Temperature: ",(cal_vel(particles)[1]**2)*(M/(3*R)),"\n")
 
     print(cal_vel(particles)) 
-    for i in range(N):
-        print(particles[i][0],"\n")
+        
+    draw_graph(particles,limit)
 
 main()
