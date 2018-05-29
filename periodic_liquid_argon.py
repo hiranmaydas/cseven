@@ -1,29 +1,31 @@
 import math as m
 import time
 import random
-import pygame,sys
-from pygame.locals import *
 
-pygame.init()
+
 #-----------------------------------------------------------------------
 #declaring necessary constants:
-FPS=30
+
 TIME_STEPS=10**(-15)
-Temperature=60 #K
-n=3
+Temperature=85 #K
+n=4
 N=n**3
 M=37.5*0.001 #Kg per mol
 N_A=6.023*(10**23) # per mol
 m = M/N_A # amu
 R=8.314 #Jule/mol.Kelvin
-density=2200# #Kg/m^3
+density=1400 #Kg/m^3
+                                    # Got very less total energy at density 322.3 Kg/m^3
+                                    # and 53K temperature
 box=(n)*((m/density)**(1/3))
 rc=box/2 #cutoff length
 sigma=3.40*((10**(-10)))
-epsilon = 1045/N_A
+epsilon = 997/N_A
 No_of_loops=100000
 
-#----------------------------------------------------------------------
+
+
+#--------------------------------------------------------------------------------------------------------------------------------------------
 def nint(x):
     if(x>=0):
         if(x>=int(x)+0.5):
@@ -36,16 +38,7 @@ def nint(x):
         else:
             return int(x)
 
-#For pygame
-fpsClock = pygame.time.Clock()
 
-DISPLAY=pygame.display.set_mode((400,300),0,32)
-pygame.display.set_caption('Md Graphics')
-WHITE= (255,255,255)
-argon=pygame.image.load('argon.png')
-
-
-#--------------------------------------------------------------------------------------------------------------------------------------------
 #initialisation 
 
 def initialisation(particles,Temperature,density):
@@ -83,8 +76,7 @@ def initialisation(particles,Temperature,density):
     rms_v = rms_v**0.5
 
     rms_v_actual=((3*R*Temperature)/M)**0.5
-    #print("rms_v_obtained:",rms_v,"  rms_v_actual:",rms_v_actual,"    vel_of_cm:",vel_cm,"\n")
-    correction_factor =rms_v_actual/rms_v
+    correction_factor = rms_v_actual/rms_v
 
 
 #correcting the velocity in order to match the temperature
@@ -97,16 +89,10 @@ def initialisation(particles,Temperature,density):
         particles[i][1] = [r_x,r_y,r_z] #updating the current position
 
     return particles
-#    for i in range(i):
-#        print(particles[i]," \t")
 
 
 
 #----------------------------------------------------------------------------------------------------------------------------
-#----------------------------------------------------------------------------------------------------------------------------
-#____________________________________________________________________________________________________________________________
-#++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-#============================================================================================================================
 
 
 def cal_force(particles,force):
@@ -127,11 +113,6 @@ def cal_force(particles,force):
 
             r2= xr**2 + yr**2 + zr**2
 
-            if(r2==0):
-                print(xr,yr,zr,"\n")
-                print(nint(xr/box),nint(yr/box),nint(zr/box),"\n")
-                print(i,j,"\n")
-
             r2i=1/r2
             r6i=r2i**3
             sigma6=sigma**6
@@ -146,13 +127,14 @@ def cal_force(particles,force):
             force[j][1]=force[j][1] - ff*yr
             force[j][2]=force[j][2] - ff*zr
 
-
+            en = en + (sigma6*r6i)**2 - (sigma6*r6i) 
     for i in range(N):
 
         force[i][0] = force[i][0]*48*epsilon*sigma6
         force[i][1] = force[i][1]*48*epsilon*sigma6
         force[i][2] = force[i][2]*48*epsilon*sigma6
 
+    en = en*epsilon*4
     return [force,en]
 
 
@@ -199,6 +181,7 @@ def integration(particles,force):
             particles[i][0][2]= box + particles[i][0][2]
 
 
+
     return particles   
 
 def cal_vel(particles):
@@ -232,6 +215,7 @@ def cal_vel(particles):
 
     return [avg_vel,rms_vel,avg_vx,avg_vy,avg_vz,avg_v]
 
+
 def draw_graph(particles,limit):
     
     graph=[]
@@ -248,55 +232,70 @@ def draw_graph(particles,limit):
             v=(vx**2 +vy**2 +vz**2)**(0.5)
             if(v>ranges[0] and v<=ranges[1]):
                 graph[j]+=1
-    #for i in range(20):
+    for i in range(20):
        # for j in range(graph[i]):
        #     print(" ")
       #  print("[*]\n \n \n")
-        #print(graph[i])
+        print(graph[i])
         
 
 #-----------------------------------------------------------------------------------------------------------------------------------------------
 #testing the initialisation 
+def check_net_force(forces):
+    fx=0
+    fy=0
+    fz=0
+    for i in range(N):
+        fx = fx + forces[i][0]
+        fy = fy + forces[i][1]
+        fz = fz + forces[i][2]
+
+    return [fx,fy,fz,forces[0][0]]
+
 def main():
+
     particles=[]
     for i in range(N):
-        particles.insert(i,[[0,0,0],[0,0,0]])
+        particles.insert(i,[[0,0,0],[0,0,0]]) 
 
     particles= initialisation(particles,Temperature,density)  #initialisation happenes here
-    #print("Velocities:",cal_vel(particles),"\n")
-    limit= 2*cal_vel(particles)[1]
-    draw_graph(particles,limit)
+    
     force=[] 
 
     for i in range(N):
         force.insert(i,[0,0,0])
-
-#----------------------------------------------------------------
+    energy=0
+#    f=open("simulation1.md","w+") #    f.write("{0:35} {1:35} {2:35} {3:35}\n".format("PARTICLE NO","POSITION X","POSITION Y","POSITION Z")) #---------------------------------------------------------------- 
     for i in range(No_of_loops):
         force_en = cal_force(particles,force)
 
         force=force_en[0]
+
+        potential_energy=force_en[1]
+
+        kinetic_energy= 0.5* N * m * cal_vel(particles)[1]**2
+
+        energy = potential_energy + kinetic_energy
+
         integration(particles,force)
-        DISPLAY.fill(WHITE)
-        for i in range(N):
-            DISPLAY.blit(argon,(particles[i][1][0]*(400/box),particles[i][1][1]*(300/box)))
+        vel=cal_vel(particles)
 
-        pygame.display.update()
-        #if(i%1000==0):
-            #print(i,"\n")
-            #print("Velocities:",cal_vel(particles),"\n")
-            #print("Temperature: ",(cal_vel(particles)[1]**2)*(M/(3*R)),"\n")
+#        f.write("TIME STEPS: {}\n \n Total Energy:{} J/mol\n Potential Energy:{} J/mole\n Kinetic Energy:{} J/mole \n RMS velocity: {} m/s^2\n Average Velocity: {} m/s^2\nVelocity of Center of Mass:{} m/s^2\n".format(i,energy*(N_A/N),potential_energy*(N_A/N),kinetic_energy*(N_A/N),vel[1],vel[0],vel[2]))
+#        for i in range(N):
+#            pos = particles[i][0]
+#            f.write("{0:30} {1:30} {2:30} {3:30} \n".format(i+1,pos[0],pos[1],pos[2]))
 
+        if(i%10==0):
+            print("TIME STEPS",i,"\n")
+            print("            RMS VELOCITY       AVERAGE VELOCITY      NET V_X                 NET V_Y                  NET V_Y                 NET VELOCITY\n")
+            print("Velocities:",cal_vel(particles),"\n")
+            print("Temperature: ",(cal_vel(particles)[1]**2)*(M/(3*R)),"\n")
+            print("Total Energy: ",energy*(N_A/N),"\n")
+            print("Kinetic Energy: ",kinetic_energy*(N_A/N),"\n")
+            print("Potential Energy: ",potential_energy*(N_A/N),"\n")
+            print("Net force on system: ", check_net_force(force),"\n")
 
-
-"""    print(cal_vel(particles)) 
+#    f.close()
         
-    draw_graph(particles,limit)
-
-    for i in range(N):
-        print(particles[i])
-       """
-   # pygame.quit()
-   # sys.exit()
 
 main()
